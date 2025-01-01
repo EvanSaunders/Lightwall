@@ -5,6 +5,50 @@
 import time
 import neopixel
 import board
+from urllib.request import urlopen
+import json
+from datetime import datetime, timedelta
+import math
+
+# Initial time offset
+time_offset = "2023-09-16T13:03:35.200"
+time_format = "%Y-%m-%dT%H:%M:%S.%f"  # Format of the datetime string
+
+# Convert time_offset to a datetime object
+current_time = datetime.strptime(time_offset, time_format)
+
+# Increment by 1 second
+increment = timedelta(seconds=1)
+
+while True:
+    next_time = current_time + increment
+    time_offset = current_time.strftime(time_format)
+    new_time_offset = next_time.strftime(time_format)
+
+    # Reset x_values to hold only current iteration data
+    x_values = []  # Clear the list before querying
+
+    # Fetch data for the current time range
+    response = urlopen(
+        f'https://api.openf1.org/v1/location?session_key=9161&driver_number=81&date>{time_offset}&date<{new_time_offset}'
+    )
+    data = json.loads(response.read().decode('utf-8'))
+
+    if data:
+       # Assuming the list is ordered by time, the last entry should be the most recent
+       most_recent_x_value = data[-1]['x']
+       #print(f"Most recent X value at {time_offset} to {new_time_offset}: {most_recent_x_value}")
+       most_recent_y_value = data[-1]['y']
+       #print(most_recent_y_value)
+
+
+       distance_traveled = math.sqrt(most_recent_x_value*most_recent_x_value + most_recent_y_value + most_recent_y_value)
+       total_track_length = 5063
+       percentage_completed = (distance_traveled / total_track_length)*100
+       print(percentage_completed)
+
+    # Wait before polling for new data
+    current_time = next_time
 
 # Choose an open pin connected to the Data In of the NeoPixel strip, i.e. board.D18
 # NeoPixels must be connected to D10, D12, D18 or D21 to work.
@@ -55,25 +99,25 @@ def rainbow_cycle(wait):
 
 while True:
     # Comment this line out if you have RGBW/GRBW NeoPixels
-    pixels.fill((255, 0, 0))
+    pixels.fill((255, 0, 255))
    # Uncomment this line if you have RGBW/GRBW NeoPixels
    # pixels.fill((255, 0, 0, 0))
     pixels.show()
-    time.sleep(1)
+    #time.sleep(1)
 
     # Comment this line out if you have RGBW/GRBW NeoPixels
-    pixels.fill((0, 255, 0))
+    #pixels.fill((0, 255, 0))
     # Uncomment this line if you have RGBW/GRBW NeoPixels
     # pixels.fill((0, 255, 0, 0))
-    pixels.show()
+   # pixels.show()
     time.sleep(1)
 
     # Comment this line out if you have RGBW/GRBW NeoPixels
-    pixels.fill((0, 0, 255))
+    #pixels.fill((0, 0, 255))
     # Uncomment this line if you have RGBW/GRBW NeoPixels
     # pixels.fill((0, 0, 255, 0))
-    pixels.show()
-    time.sleep(1)
+   # pixels.show()
+    #time.sleep(1)
 
     rainbow_cycle(0.001)  # rainbow cycle with 1ms delay per step
 
