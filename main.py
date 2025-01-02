@@ -10,17 +10,26 @@ import json
 from datetime import datetime, timedelta
 import math
 
-# Initial time offset
+
+pixel_pin = board.D18
+num_pixels = 300
+ORDER = neopixel.GRB
+
+pixels = neopixel.NeoPixel(
+    pixel_pin, num_pixels, brightness=0.2, auto_write=False, pixel_order=ORDER
+)
+
 time_offset = "2023-09-16T13:03:35.200"
-time_format = "%Y-%m-%dT%H:%M:%S.%f"  # Format of the datetime string
-
-# Convert time_offset to a datetime object
+time_format = "%Y-%m-%dT%H:%M:%S.%f"
 current_time = datetime.strptime(time_offset, time_format)
-
-# Increment by 1 second
 increment = timedelta(seconds=1)
-
+distance_traveled = 0
+prev_x, prev_y = 0, 0  # Assuming the initial position is the origin
+total_track_length = 50000
+num_leds = 200
+current_led_index = 0
 while True:
+
     next_time = current_time + increment
     time_offset = current_time.strftime(time_format)
     new_time_offset = next_time.strftime(time_format)
@@ -34,6 +43,8 @@ while True:
     )
     data = json.loads(response.read().decode('utf-8'))
 
+    if current_led_index is not None:
+        pixels[current_led_index] = (0, 0, 0)  # Turn off the previous LED
     if data:
        # Assuming the list is ordered by time, the last entry should be the most recent
        most_recent_x_value = data[-1]['x']
@@ -42,28 +53,24 @@ while True:
        #print(most_recent_y_value)
 
 
-       distance_traveled = math.sqrt(most_recent_x_value*most_recent_x_value + most_recent_y_value + most_recent_y_value)
-       total_track_length = 5063
-       percentage_completed = (distance_traveled / total_track_length)*100
-       print(percentage_completed)
+       distance_traveled += math.sqrt((most_recent_x_value - prev_x) ** 2 + (most_recent_y_value - prev_y) ** 2)
+       prev_x, prev_y = most_recent_x_value, most_recent_y_value
+       #total_track_length = 10000
+       #print(most_recent_x_value % 100)
+       #print(most_recent_y_value % 100)
+       #percentage_completed = (distance_traveled / total_track_length)*100
+       #print(percentage_completed)
+       led_index = ((distance_traveled % total_track_length) / total_track_length) * num_pixels
+
+       print(led_index)
+       pixels[math.floor(led_index)] = (0, 255, 0)  # RGB values for green
+       current_led_index = math.floor(led_index)
+       # Show the updated LED strip
+       pixels.show()
+       #time.sleep(1)
 
     # Wait before polling for new data
     current_time = next_time
-
-# Choose an open pin connected to the Data In of the NeoPixel strip, i.e. board.D18
-# NeoPixels must be connected to D10, D12, D18 or D21 to work.
-pixel_pin = board.D18
-
-# The number of NeoPixels
-num_pixels = 300
-
-# The order of the pixel colors - RGB or GRB. Some NeoPixels have red and green reversed!
-# For RGBW NeoPixels, simply change the ORDER to RGBW or GRBW.
-ORDER = neopixel.GRB
-
-pixels = neopixel.NeoPixel(
-    pixel_pin, num_pixels, brightness=0.2, auto_write=False, pixel_order=ORDER
-)
 
 
 def wheel(pos):
