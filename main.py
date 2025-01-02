@@ -12,20 +12,6 @@ import math
 
 
 pixel_pin = board.D18
-# Initial time offset
-time_offset = "2023-09-16T13:03:35.200"
-time_format = "%Y-%m-%dT%H:%M:%S.%f"  # Format of the datetime string
-
-# Convert time_offset to a datetime object
-current_time = datetime.strptime(time_offset, time_format)
-
-# Increment by 1 second
-increment = timedelta(seconds=1)
-distance_traveled = 0
-prev_x, prev_y = 0, 0  # Assuming the initial position is the origin
-total_track_length = 50000
-num_leds = 200
-current_led_index = 0
 num_pixels = 300
 ORDER = neopixel.GRB
 
@@ -35,7 +21,6 @@ pixels = neopixel.NeoPixel(
 
 time_offset = "2023-09-16T13:03:35.200"
 time_format = "%Y-%m-%dT%H:%M:%S.%f"
-global current_time 
 current_time = datetime.strptime(time_offset, time_format)
 increment = timedelta(seconds=1)
 distance_traveled = 0
@@ -43,8 +28,8 @@ prev_x, prev_y = 0, 0  # Assuming the initial position is the origin
 total_track_length = 50000
 num_leds = 200
 current_led_index = 0
+while True:
 
-def fetch_and_update_led():
     next_time = current_time + increment
     time_offset = current_time.strftime(time_format)
     new_time_offset = next_time.strftime(time_format)
@@ -84,7 +69,7 @@ def fetch_and_update_led():
        pixels.show()
        #time.sleep(1)
 
-     # Wait before polling for new data
+    # Wait before polling for new data
     current_time = next_time
 
 
@@ -120,15 +105,11 @@ def rainbow_cycle(wait):
 
 
 while True:
-
-
-
-   fetch_and_update_led()
     # Comment this line out if you have RGBW/GRBW NeoPixels
-    #pixels.fill((255, 0, 255))
+    pixels.fill((255, 0, 255))
    # Uncomment this line if you have RGBW/GRBW NeoPixels
    # pixels.fill((255, 0, 0, 0))
-    #pixels.show()
+    pixels.show()
     #time.sleep(1)
 
     # Comment this line out if you have RGBW/GRBW NeoPixels
@@ -136,7 +117,7 @@ while True:
     # Uncomment this line if you have RGBW/GRBW NeoPixels
     # pixels.fill((0, 255, 0, 0))
    # pixels.show()
-    #time.sleep(1)
+    time.sleep(1)
 
     # Comment this line out if you have RGBW/GRBW NeoPixels
     #pixels.fill((0, 0, 255))
@@ -145,5 +126,4 @@ while True:
    # pixels.show()
     #time.sleep(1)
 
-    #rainbow_cycle(0.001)  # rainbow cycle with 1ms delay per step
-
+    rainbow_cycle(0.001)  # rainbow cycle with 1ms delay per step
