@@ -46,3 +46,6 @@ class Driver:
     def get_led_index(self):
         return math.floor(self.current_position)
 
+    def get_driver_colour(self):
+        return self.driver_colour
+

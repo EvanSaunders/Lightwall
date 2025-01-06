@@ -33,6 +33,22 @@ current_led_index = 0
 def calculate_led_index(distance_traveled, total_track_length, num_pixels):
     return ((distance_traveled % total_track_length) / total_track_length) * num_pixels
 
+def hex_to_rgb(hex_color):
+    # If the input is an integer, convert it to a hex string
+    if isinstance(hex_color, int):
+        hex_color = f"{hex_color:06X}"  # Ensure it's a 6-character string, uppercase
+
+    # Remove '#' if it's included in the hex string (e.g., "#3671C6")
+    hex_color = hex_color.lstrip('#')
+
+    # Ensure it's a valid hex color string with 6 characters
+    if len(hex_color) != 6 or not all(c in '0123456789ABCDEF' for c in hex_color.upper()):
+        raise ValueError("Invalid hex color format")
+
+    # Return a tuple of RGB values by slicing the hex string
+    return tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+
+
 def fetch_and_display_past_session():
     start_time = "2023-09-16T13:03:45.200"
     end_time = "2023-09-16T13:08:35.200"
@@ -45,7 +61,7 @@ def fetch_and_display_past_session():
         #get driver team colors
         response = urlopen(f'https://api.openf1.org/v1/drivers?driver_number={driver}&session_key=9161')
         colour_data = json.loads(response.read().decode('utf-8'))
-        print(colour_data)
+        #print(colour_data)
         #get driver locations for session
         response = urlopen(
         f'https://api.openf1.org/v1/location?session_key=9161&driver_number={driver}&date>{start_time}&date<{end_time}'
@@ -54,22 +70,25 @@ def fetch_and_display_past_session():
         if colour_data and location_data:
             driver_locations = [(item['x'], item['y']) for item in location_data]  # Extract x, y coordinates
             driver_colour = colour_data[0]['team_colour']  # Store the team's color for the driver
-
+            print(driver_colour)
             # Create the Driver object and append it to the driver_list
             driver_list.append(Driver(driver, driver_colour, driver_locations))  # Pass driver locations and total_track_length
     while True:
         all_positions_displayed = True  # Check if all drivers are out of positions to display
 
         for driver in driver_list:  # Iterate through each Driver object in the driver_list
-            if current_led_index is not None:
-                pixels[current_led_index] = (0, 0, 0)  # Turn off the previous LED
             if driver.locations:  # If there are still locations to display for this driver
                 print("STILL DRIVER LOCATIONS")
                 print(driver.get_led_index())
+                if current_led_index is not None:
+                    pixels[current_led_index] = (0, 0, 0)
                 driver.update_position()
-                pixels[driver.get_led_index()] = (255, 0, 0)  # RGB values for green
+                print(driver.get_driver_colour())
+                print(hex_to_rgb(driver.get_driver_colour()))
+                print(driver.get_driver_colour())  # Should print a valid hex string or integer
+                pixels[driver.get_led_index()] = hex_to_rgb(driver.get_driver_colour())  # RGB values for green
                 pixels.show()
-                current_led_index = math.floor(driver.get_led_index())
+                current_led_index = driver.get_led_index()
                 all_positions_displayed = False  # Still more positions to display
 
         if all_positions_displayed:
