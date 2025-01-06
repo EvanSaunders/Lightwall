@@ -28,7 +28,75 @@ prev_x, prev_y = 0, 0  # Assuming the initial position is the origin
 total_track_length = 50000
 num_leds = 200
 current_led_index = 0
-while True:
+
+def fetch_and_display_past_session():
+
+    start_time = "2023-09-16T13:03:45.200"
+    end_time = "2023-09-16T13:08:35.200"
+
+    driver_list = {1,4,81,44,55,27}
+    driver_colors = {}
+    driver_locations = {}
+    for driver in driver_list:
+
+
+        #get driver team colors
+        response = urlopen(f'https://api.openf1.org/v1/drivers?driver_number={driver}&session_key=9161')
+        data = json.loads(response.read().decode('utf-8'))
+
+        if data:
+            driver_info = data[0]
+            driver_colors[driver] = driver_info['team_colour']
+            print(driver_colors)
+
+        #get driver locations for session
+        response = urlopen(
+        f'https://api.openf1.org/v1/location?session_key=9161&driver_number={driver}&date>{start_time}&date<{end_time}'
+        )
+        data = json.loads(response.read().decode('utf-8'))
+
+        if data:
+            # Create a list to store only x and y values for each location entry
+            driver_locations[driver] = [(item['x'], item['y']) for item in data]
+            print(driver_locations)
+
+
+    while True:
+        all_positions_displayed = True  # Check if all drivers are out of positions to display
+
+        for driver, locations in driver_locations.items():
+            if locations:  # If there are still positions to print for this driver
+                current_location = locations.pop(0)  # Get the next location
+                print(f"Driver {driver} is at location: {current_location}")
+                all_positions_displayed = False  # Still more positions to display
+
+            if all_positions_displayed:
+                break  # Exit the loop when all drivers have no more positions
+            time.sleep(0.5)  # Delay for a small amount of time before the next update
+
+
+
+    if data:
+        prev_x = data[0]['x']
+        prev_y = data[0]['y']
+        for item in data:
+            if current_led_index is not None:
+                pixels[current_led_index] = (0, 0, 0)  # Turn off the previous LED
+            print(item['x'])
+            current_x = item['x']
+            current_y = item['y']
+            distance_traveled += math.sqrt((current_x - prev_x) ** 2 + (current_y - prev_y) ** 2)
+            prev_x, prev_y = current_x, current_y
+            led_index = ((distance_traveled % total_track_length) / total_track_length) * num_pixels
+
+            print(led_index)
+            pixels[math.floor(led_index)] = (0, 255, 0)  # RGB values for green
+            current_led_index = math.floor(led_index)
+            # Show the updated LED strip
+            pixels.show()
+            time.sleep(1/3.7)
+
+while False:
 
     next_time = current_time + increment
     time_offset = current_time.strftime(time_format)
@@ -43,6 +111,7 @@ while True:
     )
     data = json.loads(response.read().decode('utf-8'))
 
+
     if current_led_index is not None:
         pixels[current_led_index] = (0, 0, 0)  # Turn off the previous LED
     if data:
@@ -55,11 +124,6 @@ while True:
 
        distance_traveled += math.sqrt((most_recent_x_value - prev_x) ** 2 + (most_recent_y_value - prev_y) ** 2)
        prev_x, prev_y = most_recent_x_value, most_recent_y_value
-       #total_track_length = 10000
-       #print(most_recent_x_value % 100)
-       #print(most_recent_y_value % 100)
-       #percentage_completed = (distance_traveled / total_track_length)*100
-       #print(percentage_completed)
        led_index = ((distance_traveled % total_track_length) / total_track_length) * num_pixels
 
        print(led_index)
@@ -105,6 +169,10 @@ def rainbow_cycle(wait):
 
 
 while True:
+
+
+
+    fetch_and_display_past_session()
     # Comment this line out if you have RGBW/GRBW NeoPixels
     pixels.fill((255, 0, 255))
    # Uncomment this line if you have RGBW/GRBW NeoPixels
