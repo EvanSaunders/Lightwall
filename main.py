@@ -14,6 +14,10 @@ import pytz
 from config import num_pixels, total_track_length
 import random
 
+import socket
+
+LIRC_SOCKET = "/var/run/lirc/lircd"
+
 pixel_pin = board.D18
 ORDER = neopixel.GRB
 
@@ -220,8 +224,24 @@ def set_pixel_heat_color(pixel, temperature):
     else:  # Coolest
         pixels[pixel] = (heatramp, 0, 0)
 
-while True:
+def listen_for_buttons():
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
+        s.connect(LIRC_SOCKET)
+        while True:
+            data = s.recv(128)
+            if data:
+                parts = data.decode("utf-8").strip().split()
+                if len(parts) >= 3:
+                    code = parts[2]
+                    print(f"Pressed: {code}")
+                    # Example:
+                    if code == "BRIGHT_UP":
+                        print("Increase brightness!")
+                    elif code == "FLASH_MODE":
+                        print("Flash mode triggered")
 
+while True:
+    listen_for_buttons()
     #fire(55, 120, 15)
     clock_mode()
     #fetch_and_display_past_session()
@@ -232,7 +252,7 @@ while True:
     pixels.show()
 
     #test_car()
-    rainbow_cycle(0.001)  # rainbow cycle with 1ms delay per step
+    #rainbow_cycle(0.001)  # rainbow cycle with 1ms delay per step
 
 
 
