@@ -3,7 +3,7 @@
 # Define variables
 VIRTUAL_ENV=lightwall_env
 PYTHON=$(VIRTUAL_ENV)/bin/python3
-SCRIPT=main.py
+SCRIPT=newMain.py
 
 # Target to create the virtual environment if it doesn't exist
 create_env:

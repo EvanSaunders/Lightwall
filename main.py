@@ -236,14 +236,17 @@ def listen_for_buttons():
                     print(f"Pressed: {code}")
                     # Example:
                     if code == "BRIGHT_UP":
-                        print("Increase brightness!")
-                    elif code == "FLASH_MODE":
-                        print("Flash mode triggered")
+                        pixels.brightness = pixels.brightness + 0.1
+                    elif code == "BRIGHT_DOWN":
+                        pixels.brightness = pixels.brightness - 0.1
+                    elif code == "ON":
+                        pixels.fill((255, 0, 0))
+            pixels.show()
 
 while True:
     listen_for_buttons()
     #fire(55, 120, 15)
-    clock_mode()
+    #clock_mode()
     #fetch_and_display_past_session()
     # Comment this line out if you have RGBW/GRBW NeoPixels
     #pixels.fill((255, 0, 255))

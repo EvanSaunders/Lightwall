@@ -1,0 +1,13 @@
+irrecord --disable-namespace -d /dev/lirc0 ~/newButtons.lircd.conf
+#record button presses
+
+
+evans@raspberrypi:~/Desktop/Lightwall $ nano newRemote.lircd.conf
+#Remove second line of 0xFFFFFF hex codes
+#To add new buttons, run sudo irrecord --disable-namespace -d /dev/lirc0 ~/addButtons.conf
+#Copy paste codes from new config into newRemote
+
+#Run these commands to test 
+evans@raspberrypi:~/Desktop/Lightwall $ sudo cp newRemote.lircd.conf /etc/lirc/lircd.conf
+evans@raspberrypi:~/Desktop/Lightwall $ sudo systemctl restart lircd
+evans@raspberrypi:~/Desktop/Lightwalsudo irw
