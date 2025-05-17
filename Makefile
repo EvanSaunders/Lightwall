@@ -20,5 +20,7 @@ run: create_env
 	@echo "Activating virtual environment and running the script..."
 	@bash -c "source $(VIRTUAL_ENV)/bin/activate && sudo $(PYTHON) $(SCRIPT)"
 
-kill: 
-	pkill -f main.py
+kill:
+	@echo "Killing all newMain.py instances..."
+	@sudo pkill -9 -f newMain.py || true
+

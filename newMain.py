@@ -8,6 +8,8 @@ import neopixel
 import board
 from urllib.request import urlopen
 import json
+from urllib.request import urlopen
+from urllib.parse import urlencode
 from datetime import datetime, timedelta
 import math
 from Driver import Driver
@@ -40,6 +42,8 @@ current_mode = "clock"
 current_color = (255,255,255)
 brightness_before_off = 1.0
 mode_before_off = "clock"
+formula1_submode = "SafetyCar"
+formula1_data = []
 
 def clock_mode():
     cst = pytz.timezone('US/Central')
@@ -130,6 +134,72 @@ def set_pixel_heat_color(pixel, temperature):
     else:  # Coolest
         pixels[pixel] = (heatramp, 0, 0)
 
+def formula1_current_flag():
+
+    global formula1_submode
+    global formula1_data
+    filtered_data = [
+        e for e in formula1_data
+        if (e.get("flag") in {"YELLOW", "GREEN", "DOUBE YELLOW", "RED", "CHEQUERED"}) or (e.get("category") == "SafetyCar")
+    ]
+    if filtered_data:
+        latest_event = max(filtered_data, key=lambda x: x["date"])
+        print(f"[{latest_event['date']}] Current flag: {latest_event['flag']} - {latest_event['message']}")
+    else:
+        latest_event = None
+    if latest_event:
+        flag = latest_event['flag']
+        #flag = "RED"
+        category = latest_event['category']
+        if flag == "GREEN":
+            formula1_submode = "GREEN"
+            pixels.fill((0,255,0))
+        elif flag == "YELLOW":
+            formula1_submode = "YELLOW"
+            pixels.fill((255,255,0))
+        elif flag == "DOUBLE YELLOW":
+            formula1_submode = "DOUBLE YELLOW"
+            pixels.fill((255,255,0))
+            pixels.show()
+            time.sleep(1)
+            pixels.fill((0,0,0))
+            pixels.show()
+            time.sleep(1)
+        elif flag == "CHEQUERED":
+            formula1_submode = "CHEQUERED"
+            pixels.fill((255,255,255))
+        elif flag == "RED":
+            formula1_submode = "RED"
+            pixels.fill((255,0,0))
+        elif category == "SafetyCar":
+            formula1_submode = "SafetyCar"
+            for i in range(num_pixels):
+                pixels.fill((0,0,0))
+                pixels[(i-1) % num_pixels] = (255,255,0)
+                pixels[i % num_pixels] = (255,255,0)
+                pixels[(i+1) % num_pixels] = (255,255,0)
+                time.sleep(0.05)
+                pixels.show()
+    pixels.show()
+    time.sleep(0.01)
+
+def query_api_loop():
+
+    global formula1_submode
+    global current_mode
+    global formula1_data
+    while True:
+        if current_mode == "formula1":
+            response = urlopen('https://api.openf1.org/v1/race_control?meeting_key=latest')
+            data = json.loads(response.read().decode('utf-8'))
+            if not data:
+               print("No flag data found.")
+               return
+            formula1_data = data
+            time.sleep(5)  # wait 5 seconds before next API call
+    else:
+        time.sleep(0.25)
+
 def handle_button_press(code):
     global current_mode
     global current_color
@@ -157,6 +227,7 @@ def handle_button_press(code):
                 pixels.brightness = max(0.1,brightness_before_off)
                 print(pixels.brightness)
                 pixels.show()
+
     elif code == "R0":
             current_mode = "solid"
             current_color = (255, 0, 0)
@@ -172,10 +243,63 @@ def handle_button_press(code):
     elif code == "R4":
             current_mode = "solid"
             current_color = (255, 255, 0)
+
+    elif code == "G0":
+            current_mode = "solid"
+            current_color = (0, 255, 0)
+    elif code == "G1":
+            current_mode = "solid"
+            current_color = (153, 255, 51)
+    elif code == "G2":
+            current_mode = "solid"
+            current_color = (51, 255, 51)
+    elif code == "G3":
+            current_mode = "solid"
+            current_color = (0, 102, 102)
+    elif code == "G4":
+            current_mode = "solid"
+            current_color = (153, 255, 255)
+
+    elif code == "B0":
+            current_mode = "solid"
+            current_color = (0, 0, 102)
+    elif code == "B1":
+            current_mode = "solid"
+            current_color = (0, 0, 255)
+    elif code == "B2":
+            current_mode = "solid"
+            current_color = (76, 255, 153)
+    elif code == "B3":
+            current_mode = "solid"
+            current_color = (178, 102, 255)
+    elif code == "B4":
+            current_mode = "solid"
+            current_color = (102, 0, 102)
+
+    elif code == "W0":
+            current_mode = "solid"
+            current_color = (255, 255, 255)
+    elif code == "W1":
+            current_mode = "solid"
+            current_color = (255, 204, 229)
+    elif code == "W2":
+            current_mode = "solid"
+            current_color = (255, 102, 255)
+    elif code == "W3":
+            current_mode = "solid"
+            current_color = (153, 255, 255)
+    elif code == "W4":
+            current_mode = "solid"
+            current_color = (204, 255, 255)
+
     elif code == "1H":
             current_mode = "clock"
     elif code == "2H":
             current_mode = "fire"
+    elif code == "3H":
+            current_mode = "rainbow"
+    elif code == "4H":
+            current_mode = "formula1"
 
 
 def listen_for_buttons():
@@ -190,24 +314,27 @@ def listen_for_buttons():
                     print(f"Pressed: {code}")
                     handle_button_press(code)
 
-listener_thread = threading.Thread(target=listen_for_buttons, daemon=True)
-listener_thread.start()
+threading.Thread(target=listen_for_buttons, daemon=True).start()
+threading.Thread(target=query_api_loop, daemon=True).start()
+
+ #listen_for_buttons()
 while True:
-
-
-    #listen_for_buttons()
-    while True:
-        if current_mode == "clock":
-            clock_mode()
-        elif current_mode == "fire":
-            fire(55, 120, 15)
-        elif current_mode == "solid":
-            pixels.fill(current_color)
-            pixels.show()
-            time.sleep(0.1)
+    if current_mode == "clock":
+        clock_mode()
+    elif current_mode == "fire":
+        pixels.fill((0,0,0))
+        fire(55, 120, 15)
+    elif current_mode == "rainbow":
+        rainbow_cycle(0.0001)
+    elif current_mode == "formula1":
+        formula1_current_flag()
+    elif current_mode == "solid":
+        pixels.fill(current_color)
+        pixels.show()
+        time.sleep(0.1)
     #fire(55, 120, 15)
     #clock_mode()
-    pixels.show()
+pixels.show()
 
     #test_car()
     #rainbow_cycle(0.001)  # rainbow cycle with 1ms delay per step
