@@ -122,6 +122,33 @@ def fire(cooling, sparking, speed_delay):
     pixels.show()
     time.sleep(speed_delay / 1000.0)
 
+def flag_mode():
+    for i in range(num_pixels):
+        pixels.fill((255,255,255))
+        for k in range(num_pixels):
+            if(k % 9 == 0):
+                pixels[(k+i) % num_pixels] = (255,0,0)
+                pixels[((k+i)-1) % num_pixels] = (255,0,0)
+                pixels[((k+i)-2) % num_pixels] = (255,0,0)
+                pixels[((k+i)+1) % num_pixels] = (255,0,0)
+                pixels[((k+i)+2) % num_pixels] = (255,0,0)
+
+        canton_limit = 50
+        for j in range(canton_limit):
+            idx = (j + i) % num_pixels
+            if(j%7 == 0):
+                pixels[idx % num_pixels] = (0,0,255)
+                pixels[(idx - 1) % num_pixels] = (0,0,255)
+                pixels[(idx - 2) % num_pixels] = (0,0,255)
+                pixels[(idx + 1) % num_pixels] = (0,0,255)
+                pixels[(idx + 2) % num_pixels] = (0,0,255)
+            else:
+                pixels[(idx+3) % num_pixels] = (255,255,255)
+                pixels[(idx+4) % num_pixels] = (255,255,255)
+
+        time.sleep(0.08)
+        pixels.show()
+
 def set_pixel_heat_color(pixel, temperature):
     """Convert heat values to colors and set the pixel color."""
     t192 = round((temperature / 255.0) * 191)
@@ -138,10 +165,16 @@ def formula1_current_flag():
 
     global formula1_submode
     global formula1_data
+
+    if not formula1_data:
+        #print("No F1 data available.")
+        return
+
     filtered_data = [
         e for e in formula1_data
-        if (e.get("flag") in {"YELLOW", "GREEN", "DOUBE YELLOW", "RED", "CHEQUERED"}) or (e.get("category") == "SafetyCar")
+        if e.get("flag") in {"YELLOW", "GREEN", "DOUBLE YELLOW", "RED", "CHEQUERED", "CLEAR"} or e.get("category") == "SafetyCar"
     ]
+
     if filtered_data:
         latest_event = max(filtered_data, key=lambda x: x["date"])
         print(f"[{latest_event['date']}] Current flag: {latest_event['flag']} - {latest_event['message']}")
@@ -151,7 +184,7 @@ def formula1_current_flag():
         flag = latest_event['flag']
         #flag = "RED"
         category = latest_event['category']
-        if flag == "GREEN":
+        if flag == "GREEN" or flag == "CLEAR":
             formula1_submode = "GREEN"
             pixels.fill((0,255,0))
         elif flag == "YELLOW":
@@ -199,6 +232,10 @@ def query_api_loop():
             time.sleep(5)  # wait 5 seconds before next API call
     else:
         time.sleep(0.25)
+
+def get_date(e):
+    # Assumes 'date' is in ISO 8601 format like "2025-05-18T14:23:00Z"
+    return datetime.fromisoformat(e["date"].replace("Z", "")).date()
 
 def handle_button_press(code):
     global current_mode
@@ -289,8 +326,7 @@ def handle_button_press(code):
             current_mode = "solid"
             current_color = (153, 255, 255)
     elif code == "W4":
-            current_mode = "solid"
-            current_color = (204, 255, 255)
+            current_mode = "flag"
 
     elif code == "1H":
             current_mode = "clock"
@@ -332,6 +368,8 @@ while True:
         pixels.fill(current_color)
         pixels.show()
         time.sleep(0.1)
+    elif current_mode == "flag":
+        flag_mode()
     #fire(55, 120, 15)
     #clock_mode()
 pixels.show()
